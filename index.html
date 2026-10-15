@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard meteorológico simples com OpenWeatherMap e MQTT.">
+  <title>ClimaNow | Dashboard Meteorológico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/script.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="ClimaNow página inicial">
+        <span class="brand-icon" aria-hidden="true">☀</span>
+        <span>Clima<span class="brand-light">Now</span></span>
+      </a>
+      <div class="top-actions">
+        <span class="live-dot" aria-hidden="true"></span><span class="top-label">PAINEL METEOROLÓGICO</span>
+        <button id="themeButton" class="icon-button" type="button" aria-label="Alternar tema" title="Alternar tema">☾</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">PREVISÃO DO TEMPO</p>
+          <h1>O clima, <span>em um só lugar.</span></h1>
+          <p class="subheading">Consulte as condições meteorológicas de qualquer cidade.</p>
+        </div>
+        <div class="search-panel">
+          <form id="searchForm" class="search-form">
+            <label class="sr-only" for="cityInput">Nome da cidade</label>
+            <span class="search-symbol" aria-hidden="true">⌕</span>
+            <input id="cityInput" name="city" type="text" placeholder="Digite uma cidade..." autocomplete="off" required>
+            <label class="sr-only" for="countryInput">Código do país opcional</label>
+            <input id="countryInput" class="country-input" name="country" type="text" placeholder="País (BR)" maxlength="2" value="BR" aria-label="Código do país opcional, por exemplo BR">
+            <button class="search-button" type="submit">Consultar <span aria-hidden="true">→</span></button>
+          </form>
+          <p class="search-hint">Dica: pressione Enter para pesquisar.</p>
+        </div>
+      </section>
+
+      <div id="statusMessage" class="status-message" role="status" aria-live="polite">Pesquise uma cidade para ver as condições atuais.</div>
+
+      <section class="weather-hero" aria-labelledby="currentTitle">
+        <div class="hero-main">
+          <div class="location-line"><span aria-hidden="true">⌖</span><h2 id="currentTitle">Brotas, BR</h2></div>
+          <p id="weatherDescription" class="weather-description">Aguardando consulta</p>
+          <div class="temperature-line"><span id="temperature">--</span><span class="degree">°C</span></div>
+          <p id="feelsLike" class="feels-like">Sensação térmica: -- °C</p>
+          <p id="updatedAt" class="updated-at">Última atualização: —</p>
+        </div>
+        <div class="hero-weather" aria-hidden="true">
+          <div id="weatherEmoji" class="weather-emoji">🌤️</div>
+          <div class="sun-glow"></div>
+        </div>
+        <div class="hero-foot">
+          <span id="minMax">Mín. --° · Máx. --°</span>
+          <span id="sunTimes">Nascer do sol --:-- · Pôr do sol --:--</span>
+        </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="detailsTitle">
+        <div class="section-heading">
+          <div><p class="eyebrow">CONDIÇÕES ATUAIS</p><h2 id="detailsTitle">Resumo meteorológico</h2></div>
+          <span class="section-note">Dados da OpenWeatherMap</span>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card"><div class="metric-icon blue" aria-hidden="true">💧</div><p>Umidade</p><strong id="humidity">--<small>%</small></strong><span class="metric-foot">No ar</span></article>
+          <article class="metric-card"><div class="metric-icon orange" aria-hidden="true">〰</div><p>Velocidade do vento</p><strong id="wind">--<small> km/h</small></strong><span class="metric-foot">Condição do vento</span></article>
+          <article class="metric-card"><div class="metric-icon purple" aria-hidden="true">◉</div><p>Pressão atmosférica</p><strong id="pressure">--<small> hPa</small></strong><span class="metric-foot">Pressão local</span></article>
+          <article class="metric-card"><div class="metric-icon green" aria-hidden="true">↕</div><p>Temperatura máxima</p><strong id="maxTemp">--<small>°C</small></strong><span class="metric-foot">Máxima registrada</span></article>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel chart-panel">
+          <div class="panel-heading"><div><p class="eyebrow">PRÓXIMAS HORAS</p><h2>Previsão de temperatura</h2></div><span class="chart-tag">5 períodos</span></div>
+          <div class="chart-wrap"><canvas id="forecastChart" role="img" aria-label="Gráfico de previsão de temperatura para os próximos períodos"></canvas></div>
+          <p class="chart-caption">Previsão baseada nos dados retornados pela API.</p>
+        </article>
+        <aside class="panel side-panel">
+          <div class="panel-heading"><div><p class="eyebrow">ACESSO RÁPIDO</p><h2>Minha cidade</h2></div><span class="favorite-star" aria-hidden="true">★</span></div>
+          <p id="favoriteText" class="favorite-city">Nenhuma cidade salva.</p>
+          <button id="favoriteButton" class="secondary-button" type="button">☆ Salvar cidade atual</button>
+          <button id="favoriteSearchButton" class="text-button" type="button" disabled>Consultar favorita →</button>
+          <div class="divider"></div>
+          <div class="panel-heading history-heading"><div><p class="eyebrow">PESQUISAS RECENTES</p><h2>Histórico</h2></div><button id="clearHistoryButton" class="clear-button" type="button">Limpar</button></div>
+          <ul id="historyList" class="history-list"><li class="empty-history">Suas consultas aparecerão aqui.</li></ul>
+        </aside>
+      </section>
+
+      <section class="panel mqtt-panel">
+        <div class="mqtt-info"><div class="mqtt-icon" aria-hidden="true">⌁</div><div><p class="eyebrow">INTEGRAÇÃO IOT</p><h2>Status MQTT</h2><p class="mqtt-description">Conexão para publicar os dados meteorológicos.</p></div></div>
+        <div class="mqtt-status-wrap"><span id="mqttIndicator" class="mqtt-indicator"></span><strong id="mqttStatus">Desconectado</strong><button id="publishButton" class="secondary-button" type="button" disabled>Publicar dados</button></div>
+      </section>
+    </main>
+
+    <footer><span>ClimaNow <span class="footer-dot">•</span> Projeto educacional SENAI</span><span>HTML · CSS · JavaScript · OpenWeatherMap · MQTT</span></footer>
+  </div>
+</body>
+</html>
